@@ -74,12 +74,29 @@
       border-spacing: 0 8px;
       margin-top: 15px;
     }
+    thead {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
+    tbody#parentExpenseTableBody {
+      display: block;
+      max-height: 250px;
+      overflow-y: auto;
+      width: 100%;
+    }
+    tbody tr {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
     th {
       background: #ff6f91;
       color: white;
       font-weight: bold;
       padding: 12px 10px;
       border-radius: 12px 12px 0 0;
+      text-align: center;
     }
     td {
       background: #ffe5eb;
@@ -97,6 +114,15 @@
       color: #d94e4e;
       font-weight: bolder;
       text-shadow: 1px 1px 2px #ff4b6e;
+    }
+    #parentBalances {
+      margin-bottom: 20px;
+      font-weight: 700;
+      font-size: 1.2em;
+      color: #d94e4e;
+    }
+    #parentBalances li {
+      margin: 6px 0;
     }
   </style>
 </head>
@@ -301,10 +327,15 @@
 
         const ul = document.getElementById("parentBalances");
         ul.innerHTML = "";
+        let hasBalance = false;
         for (const [child, bal] of Object.entries(balances)) {
           const li = document.createElement("li");
           li.textContent = `${child}: ${bal.toFixed(2)} Dhs`;
           ul.appendChild(li);
+          hasBalance = true;
+        }
+        if (!hasBalance) {
+          ul.innerHTML = "<li>No balances available yet.</li>";
         }
       });
     }
