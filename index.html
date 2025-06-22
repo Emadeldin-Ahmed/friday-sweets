@@ -10,6 +10,9 @@
     button { margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    h3 { margin-top: 30px; }
+    label { display: block; margin-top: 10px; }
+    input, select { margin-top: 5px; padding: 5px; width: 100%; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -60,7 +63,25 @@
   <!-- PARENT VIEW -->
   <div id="parentSection">
     <h2>👨‍👩‍👧 Parental Dashboard</h2>
+
+    <h3>Balance Checker</h3>
     <ul id="parentBalances"></ul>
+
+    <h3>Add Money to Child's Balance</h3>
+    <label for="moneyChildSelect">Select Child:</label>
+    <select id="moneyChildSelect">
+      <option>Khadija</option>
+      <option>Omar</option>
+      <option>Emad</option>
+    </select>
+
+    <label for="moneyAmount">Amount to Add (Dhs):</label>
+    <input id="moneyAmount" type="number" placeholder="Enter amount" />
+
+    <label for="moneyDesc">Description:</label>
+    <input id="moneyDesc" placeholder="Description (e.g. allowance)" />
+
+    <button id="parentAddMoneyBtn">Add Money</button>
 
     <h3>All Transactions</h3>
     <table>
@@ -71,19 +92,25 @@
     </table>
 
     <h3>Add Transaction for Any Child</h3>
+    <label for="parentChildSelect">Select Child:</label>
     <select id="parentChildSelect">
       <option>Khadija</option>
       <option>Omar</option>
       <option>Emad</option>
     </select>
+
+    <label for="parentDesc">Description:</label>
     <input id="parentDesc" placeholder="Description" />
+
+    <label for="parentAmount">Amount (positive or negative):</label>
     <input id="parentAmount" type="number" placeholder="Amount" />
+
     <button id="parentAddExpenseBtn">Add Transaction</button>
+
     <br><br>
     <button id="parentSignOutBtn">Sign out</button>
   </div>
 
-  <!-- FIREBASE + LOGIC -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
@@ -99,9 +126,11 @@
       addDoc,
       query,
       where,
-      getDocs,
+      onSnapshot,
       deleteDoc,
       doc,
+      getDoc,
+      setDoc,
       Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -129,12 +158,25 @@
     let currentChild = null;
     let userEmail = null;
 
+    let unsubscribeChildExpenses = null;
+    let unsubscribeParentExpenses = null;
+
+    // Helpers
+    function getWeekYear(date) {
+      const d = new Date(date);
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+      const week1 = new Date(d.getFullYear(), 0, 4);
+      const weekNo = 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+      return `${d.getFullYear()}-${weekNo}`;
+    }
+
     // Sign in with Google
     document.getElementById("googleSignInBtn").addEventListener("click", () => {
       signInWithPopup(auth, provider);
     });
 
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
       if (user) {
         userEmail = user.email;
         if (parentalEmails.includes(userEmail)) {
@@ -152,6 +194,8 @@
       currentChild = name;
       document.getElementById("pinChildName").textContent = name;
       document.getElementById("pinSection").style.display = "block";
+      document.getElementById("pinError").textContent = "";
+      document.getElementById("pinInput").value = "";
     });
 
     // Child enters PIN
@@ -161,11 +205,32 @@
         document.getElementById("childSection").style.display = "none";
         document.getElementById("trackerSection").style.display = "block";
         document.getElementById("currentChildName").textContent = currentChild;
-        await loadChildData(currentChild);
+        await addWeeklyTopUpIfNeeded(currentChild);
+        subscribeToChildExpenses(currentChild);
       } else {
         document.getElementById("pinError").textContent = "Wrong PIN!";
       }
     });
+
+    // Add weekly 10 Dhs if today is Friday and not already added this week
+    async function addWeeklyTopUpIfNeeded(child) {
+      const today = new Date();
+      if (today.getDay() !== 5) return; // 5 = Friday
+
+      const weekKey = getWeekYear(today);
+      const docRef = doc(db, "weeklyTopUps", child);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists() || docSnap.data().week !== weekKey) {
+        await addDoc(collection(db, "expenses"), {
+          child,
+          description: "Weekly 10 Dhs top-up",
+          amount: 10,
+          date: Timestamp.now()
+        });
+        await setDoc(docRef, { week: weekKey });
+      }
+    }
 
     // Child adds an expense
     document.getElementById("childAddExpenseBtn").addEventListener("click", async () => {
@@ -175,25 +240,14 @@
         await addDoc(collection(db, "expenses"), {
           child: currentChild,
           description: desc,
-          amount: -amount, // negative amount because child spends money
+          amount: -amount, // negative because child spends money
           date: Timestamp.now()
         });
         document.getElementById("childDesc").value = "";
         document.getElementById("childAmount").value = "";
-        await loadChildData(currentChild);
       } else {
         alert("Please enter a valid description and positive amount.");
       }
-    });
-
-    // Sign out buttons
-    document.getElementById("signOutBtn").addEventListener("click", () => {
-      signOut(auth);
-      location.reload();
-    });
-    document.getElementById("parentSignOutBtn").addEventListener("click", () => {
-      signOut(auth);
-      location.reload();
     });
 
     // Parent adds any transaction (expense or money added)
@@ -205,93 +259,127 @@
         await addDoc(collection(db, "expenses"), {
           child: name,
           description: desc,
-          amount: amount, // can be positive or negative
+          amount: amount,
           date: Timestamp.now()
         });
         document.getElementById("parentDesc").value = "";
         document.getElementById("parentAmount").value = "";
-        await loadAllExpensesForParent();
       } else {
         alert("Please enter valid description and amount.");
       }
     });
 
-    // Load child data: balance + transactions
-    async function loadChildData(name) {
-      const q = query(collection(db, "expenses"), where("child", "==", name));
-      const querySnapshot = await getDocs(q);
+    // Parent adds money to child's balance (positive amount only)
+    document.getElementById("parentAddMoneyBtn").addEventListener("click", async () => {
+      const name = document.getElementById("moneyChildSelect").value;
+      const desc = document.getElementById("moneyDesc").value.trim();
+      const amount = parseFloat(document.getElementById("moneyAmount").value);
+      if (desc && !isNaN(amount) && amount > 0) {
+        await addDoc(collection(db, "expenses"), {
+          child: name,
+          description: desc,
+          amount: amount,
+          date: Timestamp.now()
+        });
+        document.getElementById("moneyDesc").value = "";
+        document.getElementById("moneyAmount").value = "";
+      } else {
+        alert("Please enter valid description and positive amount.");
+      }
+    });
 
-      let balance = 0;
-      const tbody = document.getElementById("childExpenseTableBody");
-      tbody.innerHTML = "";
+    // Subscribe to child expenses live
+    function subscribeToChildExpenses(childName) {
+      const q = query(collection(db, "expenses"), where("child", "==", childName));
 
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        balance += data.amount;
+      if (unsubscribeChildExpenses) unsubscribeChildExpenses();
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${data.description}</td>
-          <td>${data.amount.toFixed(2)}</td>
-          <td>${data.date.toDate().toLocaleDateString()}</td>
-        `;
-        tbody.appendChild(tr);
+      unsubscribeChildExpenses = onSnapshot(q, snapshot => {
+        let balance = 0;
+        const tbody = document.getElementById("childExpenseTableBody");
+        tbody.innerHTML = "";
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          balance += data.amount;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${data.description}</td>
+            <td>${data.amount.toFixed(2)}</td>
+            <td>${data.date.toDate().toLocaleDateString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("balance").textContent = balance.toFixed(2);
       });
-
-      document.getElementById("balance").textContent = balance.toFixed(2);
     }
 
-    // Show parent view and load all data
-    async function showParentView() {
+    // Show parent view and subscribe to live updates
+    function showParentView() {
       document.getElementById("loginSection").style.display = "none";
       document.getElementById("parentSection").style.display = "block";
-      await loadAllExpensesForParent();
+      subscribeToAllExpenses();
     }
 
-    // Load all expenses for parent dashboard
-    async function loadAllExpensesForParent() {
+    // Subscribe to all expenses live for parent dashboard
+    function subscribeToAllExpenses() {
       const q = query(collection(db, "expenses"));
-      const snapshot = await getDocs(q);
 
-      const balances = { Khadija: 0, Omar: 0, Emad: 0 };
-      const tbody = document.getElementById("parentExpenseTableBody");
-      tbody.innerHTML = "";
+      if (unsubscribeParentExpenses) unsubscribeParentExpenses();
 
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const { child, description, amount, date } = data;
-        balances[child] += amount;
+      unsubscribeParentExpenses = onSnapshot(q, snapshot => {
+        const balances = { Khadija: 0, Omar: 0, Emad: 0 };
+        const tbody = document.getElementById("parentExpenseTableBody");
+        tbody.innerHTML = "";
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${child}</td>
-          <td>${description}</td>
-          <td>${amount.toFixed(2)}</td>
-          <td>${date.toDate().toLocaleDateString()}</td>
-          <td><button data-id="${docSnap.id}" class="deleteBtn">Delete</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const { child, description, amount, date } = data;
+          balances[child] += amount;
 
-      const ul = document.getElementById("parentBalances");
-      ul.innerHTML = "";
-      for (const [child, balance] of Object.entries(balances)) {
-        const li = document.createElement("li");
-        li.textContent = `${child}: ${balance.toFixed(2)} Dhs`;
-        ul.appendChild(li);
-      }
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${child}</td>
+            <td>${description}</td>
+            <td>${amount.toFixed(2)}</td>
+            <td>${date.toDate().toLocaleDateString()}</td>
+            <td><button data-id="${docSnap.id}" class="deleteBtn">Delete</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
 
-      // Delete transaction buttons
-      document.querySelectorAll(".deleteBtn").forEach(btn => {
-        btn.addEventListener("click", async e => {
-          const id = e.target.getAttribute("data-id");
-          if (confirm("Delete this transaction?")) {
-            await deleteDoc(doc(db, "expenses", id));
-            await loadAllExpensesForParent();
-          }
+        const ul = document.getElementById("parentBalances");
+        ul.innerHTML = "";
+        for (const [child, balance] of Object.entries(balances)) {
+          const li = document.createElement("li");
+          li.textContent = `${child}: ${balance.toFixed(2)} Dhs`;
+          ul.appendChild(li);
+        }
+
+        // Attach delete listeners
+        document.querySelectorAll(".deleteBtn").forEach(btn => {
+          btn.addEventListener("click", async e => {
+            const id = e.target.getAttribute("data-id");
+            if (confirm("Delete this transaction?")) {
+              await deleteDoc(doc(db, "expenses", id));
+            }
+          });
         });
       });
     }
+
+    // Sign out buttons
+    document.getElementById("signOutBtn").addEventListener("click", () => {
+      signOut(auth);
+      location.reload();
+    });
+    document.getElementById("parentSignOutBtn").addEventListener("click", () => {
+      signOut(auth);
+      location.reload();
+    });
+
   </script>
 </body>
 </html>
