@@ -2,137 +2,169 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Friday Sweets</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍬 Friday Sweets Tracker 🍭</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    #childSection, #pinSection, #trackerSection, #parentSection { display: none; margin-top: 20px; }
-    button { margin-top: 10px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-    h3 { margin-top: 30px; }
-    label { display: block; margin-top: 10px; }
-    input, select { margin-top: 5px; padding: 5px; width: 100%; box-sizing: border-box; }
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: linear-gradient(135deg, #fceabb, #f8b500);
+      color: #4a2c2a;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 20px #f8b500a8;
+      border-radius: 15px;
+    }
+    h1, h2, h3 {
+      text-align: center;
+      text-shadow: 1px 1px #d94e4e;
+      margin-bottom: 15px;
+    }
+    button {
+      background-color: #ff6f91;
+      border: none;
+      padding: 12px 22px;
+      color: white;
+      font-weight: bold;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 1.1em;
+      box-shadow: 0 5px 10px #ff6f9170;
+      transition: background-color 0.3s ease;
+      margin-top: 12px;
+    }
+    button:hover {
+      background-color: #ff4b6e;
+    }
+    select, input[type="password"], input[type="number"], input[type="text"] {
+      padding: 10px;
+      border-radius: 15px;
+      border: 2px solid #ff6f91;
+      font-size: 1em;
+      margin: 8px 0;
+      width: 100%;
+      box-sizing: border-box;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+    #childSection, #pinSection, #parentSection {
+      display: none;
+      background-color: #fff6f9;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 12px #ff6f91aa;
+      margin-top: 30px;
+    }
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    ul li {
+      background: #ffd7de;
+      margin: 6px 0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px #ff6f9155;
+      font-weight: 600;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px;
+      margin-top: 15px;
+    }
+    th {
+      background: #ff6f91;
+      color: white;
+      font-weight: bold;
+      padding: 12px 10px;
+      border-radius: 12px 12px 0 0;
+    }
+    td {
+      background: #ffe5eb;
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid #ff6f9180;
+    }
+    td button {
+      background-color: #ff4b6e;
+      padding: 6px 12px;
+      font-size: 0.9em;
+      border-radius: 15px;
+      box-shadow: none;
+      margin: 0;
+    }
+    td button:hover {
+      background-color: #ff254f;
+    }
+    p, label {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin: 10px 0 6px 0;
+    }
+    span#childBalance {
+      font-size: 1.5em;
+      color: #d94e4e;
+      font-weight: bolder;
+      text-shadow: 1px 1px 2px #ff4b6e;
+    }
   </style>
 </head>
 <body>
-  <h1>🍬 Friday Sweets Tracker</h1>
+  <h1>🍬 Friday Sweets Tracker 🍭</h1>
+  <button id="googleSignIn">Sign in with Google</button>
 
-  <div id="loginSection">
-    <button id="googleSignInBtn">Sign in with Google</button>
-  </div>
-
-  <!-- CHILD VIEW -->
-  <div id="childSection">
-    <h2>Who are you?</h2>
-    <select id="childSelect">
-      <option disabled selected>Pick a name</option>
-      <option>Khadija</option>
-      <option>Omar</option>
-      <option>Emad</option>
+  <div id="pinSection">
+    <h2>Enter 4-digit PIN</h2>
+    <select id="childSelect" aria-label="Select Child Name">
+      <option value="Khadija">Khadija</option>
+      <option value="Omar">Omar</option>
+      <option value="Emad">Emad</option>
     </select>
-    <div id="pinSection">
-      <p>Enter PIN for <strong id="pinChildName"></strong>:</p>
-      <input id="pinInput" type="password" placeholder="4-digit PIN" />
-      <button id="pinSubmitBtn">Unlock</button>
-      <div id="pinError" style="color:red;"></div>
-    </div>
+    <input type="password" id="pinInput" placeholder="4-digit PIN" maxlength="4" aria-label="Enter 4-digit PIN" />
+    <button id="verifyPinBtn">Verify PIN</button>
   </div>
 
-  <div id="trackerSection">
-    <h2>Welcome, <span id="currentChildName"></span>!</h2>
-    <p>💰 Your balance: <strong><span id="balance">0</span> Dhs</strong></p>
+  <div id="childSection" aria-live="polite">
+    <h2>Welcome, <span id="childNameDisplay"></span>!</h2>
+    <p>Your Balance: <span id="childBalance">Loading...</span> Dhs</p>
+    <input id="childDesc" placeholder="What did you buy?" aria-label="Expense Description" />
+    <input id="childAmount" placeholder="How much?" type="number" min="0" aria-label="Expense Amount" />
+    <button id="childAddExpenseBtn">Add Expense</button>
 
-    <h3>Your Transactions</h3>
-    <table>
-      <thead>
-        <tr><th>Description</th><th>Amount</th><th>Date</th></tr>
-      </thead>
-      <tbody id="childExpenseTableBody"></tbody>
-    </table>
-
-    <h3>Add Expense</h3>
-    <input id="childDesc" placeholder="Description" />
-    <input id="childAmount" type="number" placeholder="Amount" />
-    <button id="childAddExpenseBtn">Add</button>
-
-    <br><br>
-    <button id="signOutBtn">Sign out</button>
+    <h3>Your Transactions:</h3>
+    <ul id="childTransactions"></ul>
   </div>
 
-  <!-- PARENT VIEW -->
-  <div id="parentSection">
-    <h2>👨‍👩‍👧 Parental Dashboard</h2>
-
-    <h3>Balance Checker</h3>
+  <div id="parentSection" aria-live="polite">
+    <h2>Parent Panel</h2>
+    <p>Balances:</p>
     <ul id="parentBalances"></ul>
 
-    <h3>Add Money to Child's Balance</h3>
-    <label for="moneyChildSelect">Select Child:</label>
-    <select id="moneyChildSelect">
-      <option>Khadija</option>
-      <option>Omar</option>
-      <option>Emad</option>
+    <h3>Add Transaction for Child</h3>
+    <select id="parentChildSelect" aria-label="Select Child Name for Parent">
+      <option value="Khadija">Khadija</option>
+      <option value="Omar">Omar</option>
+      <option value="Emad">Emad</option>
     </select>
-
-    <label for="moneyAmount">Amount to Add (Dhs):</label>
-    <input id="moneyAmount" type="number" placeholder="Enter amount" />
-
-    <label for="moneyDesc">Description:</label>
-    <input id="moneyDesc" placeholder="Description (e.g. allowance)" />
-
-    <button id="parentAddMoneyBtn">Add Money</button>
+    <input id="parentDesc" placeholder="Description" aria-label="Transaction Description" />
+    <input id="parentAmount" placeholder="Amount (+ or -)" type="number" aria-label="Transaction Amount" />
+    <button id="parentAddExpenseBtn">Add Transaction</button>
 
     <h3>All Transactions</h3>
     <table>
       <thead>
-        <tr><th>Child</th><th>Description</th><th>Amount</th><th>Date</th><th>Action</th></tr>
+        <tr><th>Child</th><th>Description</th><th>Amount</th><th>Date</th><th>Delete</th></tr>
       </thead>
       <tbody id="parentExpenseTableBody"></tbody>
     </table>
-
-    <h3>Add Transaction for Any Child</h3>
-    <label for="parentChildSelect">Select Child:</label>
-    <select id="parentChildSelect">
-      <option>Khadija</option>
-      <option>Omar</option>
-      <option>Emad</option>
-    </select>
-
-    <label for="parentDesc">Description:</label>
-    <input id="parentDesc" placeholder="Description" />
-
-    <label for="parentAmount">Amount (positive or negative):</label>
-    <input id="parentAmount" type="number" placeholder="Amount" />
-
-    <button id="parentAddExpenseBtn">Add Transaction</button>
-
-    <br><br>
-    <button id="parentSignOutBtn">Sign out</button>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getAuth,
-      GoogleAuthProvider,
-      signInWithPopup,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      query,
-      where,
-      onSnapshot,
-      deleteDoc,
-      doc,
-      getDoc,
-      setDoc,
-      Timestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, onSnapshot, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAbpN6PKSiyD5nNcZNNRgshTTwUTs4A0po",
@@ -144,192 +176,111 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
     const db = getFirestore(app);
+    const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    const children = {
-      Khadija: "1111",
-      Omar: "2222",
-      Emad: "3333"
-    };
+    const pins = { Khadija: "1111", Omar: "2222", Emad: "3333" };
+    const parents = ["prof.ahmedemad@gmail.com"];
 
-    const parentalEmails = ["prof.ahmedemad@gmail.com", "sarah.shater@gmail.com"];
-    let currentChild = null;
-    let userEmail = null;
+    let currentUserEmail = "";
+    let currentChild = "";
 
-    let unsubscribeChildExpenses = null;
-    let unsubscribeParentExpenses = null;
+    document.getElementById("googleSignIn").addEventListener("click", async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        currentUserEmail = result.user.email;
 
-    // Helpers
-    function getWeekYear(date) {
-      const d = new Date(date);
-      d.setHours(0,0,0,0);
-      d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-      const week1 = new Date(d.getFullYear(), 0, 4);
-      const weekNo = 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
-      return `${d.getFullYear()}-${weekNo}`;
-    }
-
-    // Sign in with Google
-    document.getElementById("googleSignInBtn").addEventListener("click", () => {
-      signInWithPopup(auth, provider);
-    });
-
-    onAuthStateChanged(auth, async user => {
-      if (user) {
-        userEmail = user.email;
-        if (parentalEmails.includes(userEmail)) {
-          showParentView();
+        if (parents.includes(currentUserEmail)) {
+          document.getElementById("googleSignIn").style.display = "none";
+          document.getElementById("parentSection").style.display = "block";
+          loadAllExpensesForParent();
         } else {
-          document.getElementById("loginSection").style.display = "none";
-          document.getElementById("childSection").style.display = "block";
+          document.getElementById("googleSignIn").style.display = "none";
+          document.getElementById("pinSection").style.display = "block";
         }
+      } catch(e) {
+        alert("Sign-in failed: " + e.message);
       }
     });
 
-    // Child selects name
-    document.getElementById("childSelect").addEventListener("change", () => {
-      const name = document.getElementById("childSelect").value;
-      currentChild = name;
-      document.getElementById("pinChildName").textContent = name;
-      document.getElementById("pinSection").style.display = "block";
-      document.getElementById("pinError").textContent = "";
-      document.getElementById("pinInput").value = "";
-    });
-
-    // Child enters PIN
-    document.getElementById("pinSubmitBtn").addEventListener("click", async () => {
-      const pin = document.getElementById("pinInput").value;
-      if (children[currentChild] === pin) {
-        document.getElementById("childSection").style.display = "none";
-        document.getElementById("trackerSection").style.display = "block";
-        document.getElementById("currentChildName").textContent = currentChild;
-        await addWeeklyTopUpIfNeeded(currentChild);
-        subscribeToChildExpenses(currentChild);
+    document.getElementById("verifyPinBtn").addEventListener("click", () => {
+      const selectedChild = document.getElementById("childSelect").value;
+      const enteredPin = document.getElementById("pinInput").value.trim();
+      if (pins[selectedChild] === enteredPin) {
+        currentChild = selectedChild;
+        document.getElementById("childNameDisplay").textContent = currentChild;
+        document.getElementById("pinSection").style.display = "none";
+        document.getElementById("childSection").style.display = "block";
+        loadChildData();
       } else {
-        document.getElementById("pinError").textContent = "Wrong PIN!";
+        alert("Incorrect PIN");
       }
     });
 
-    // Add weekly 10 Dhs if today is Friday and not already added this week
-    async function addWeeklyTopUpIfNeeded(child) {
-      const today = new Date();
-      if (today.getDay() !== 5) return; // 5 = Friday
-
-      const weekKey = getWeekYear(today);
-      const docRef = doc(db, "weeklyTopUps", child);
-      const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists() || docSnap.data().week !== weekKey) {
-        await addDoc(collection(db, "expenses"), {
-          child,
-          description: "Weekly 10 Dhs top-up",
-          amount: 10,
-          date: Timestamp.now()
-        });
-        await setDoc(docRef, { week: weekKey });
-      }
-    }
-
-    // Child adds an expense
     document.getElementById("childAddExpenseBtn").addEventListener("click", async () => {
       const desc = document.getElementById("childDesc").value.trim();
       const amount = parseFloat(document.getElementById("childAmount").value);
       if (desc && !isNaN(amount) && amount > 0) {
-        await addDoc(collection(db, "expenses"), {
-          child: currentChild,
-          description: desc,
-          amount: -amount, // negative because child spends money
-          date: Timestamp.now()
-        });
-        document.getElementById("childDesc").value = "";
-        document.getElementById("childAmount").value = "";
-      } else {
-        alert("Please enter a valid description and positive amount.");
-      }
-    });
-
-    // Parent adds any transaction (expense or money added)
-    document.getElementById("parentAddExpenseBtn").addEventListener("click", async () => {
-      const name = document.getElementById("parentChildSelect").value;
-      const desc = document.getElementById("parentDesc").value.trim();
-      const amount = parseFloat(document.getElementById("parentAmount").value);
-      if (desc && !isNaN(amount)) {
-        await addDoc(collection(db, "expenses"), {
-          child: name,
-          description: desc,
-          amount: amount,
-          date: Timestamp.now()
-        });
-        document.getElementById("parentDesc").value = "";
-        document.getElementById("parentAmount").value = "";
-      } else {
-        alert("Please enter valid description and amount.");
-      }
-    });
-
-    // Parent adds money to child's balance (positive amount only)
-    document.getElementById("parentAddMoneyBtn").addEventListener("click", async () => {
-      const name = document.getElementById("moneyChildSelect").value;
-      const desc = document.getElementById("moneyDesc").value.trim();
-      const amount = parseFloat(document.getElementById("moneyAmount").value);
-      if (desc && !isNaN(amount) && amount > 0) {
-        await addDoc(collection(db, "expenses"), {
-          child: name,
-          description: desc,
-          amount: amount,
-          date: Timestamp.now()
-        });
-        document.getElementById("moneyDesc").value = "";
-        document.getElementById("moneyAmount").value = "";
+        try {
+          await addDoc(collection(db, "expenses"), {
+            child: currentChild,
+            description: desc,
+            amount: -Math.abs(amount),
+            date: Timestamp.now()
+          });
+          document.getElementById("childDesc").value = "";
+          document.getElementById("childAmount").value = "";
+        } catch (e) {
+          alert("Error adding expense: " + e.message);
+        }
       } else {
         alert("Please enter valid description and positive amount.");
       }
     });
 
-    // Subscribe to child expenses live
-    function subscribeToChildExpenses(childName) {
-      const q = query(collection(db, "expenses"), where("child", "==", childName));
-
-      if (unsubscribeChildExpenses) unsubscribeChildExpenses();
-
-      unsubscribeChildExpenses = onSnapshot(q, snapshot => {
+    function loadChildData() {
+      const q = query(collection(db, "expenses"), where("child", "==", currentChild));
+      onSnapshot(q, snapshot => {
         let balance = 0;
-        const tbody = document.getElementById("childExpenseTableBody");
-        tbody.innerHTML = "";
-
+        const list = document.getElementById("childTransactions");
+        list.innerHTML = "";
         snapshot.forEach(doc => {
           const data = doc.data();
           balance += data.amount;
-
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${data.description}</td>
-            <td>${data.amount.toFixed(2)}</td>
-            <td>${data.date.toDate().toLocaleDateString()}</td>
-          `;
-          tbody.appendChild(tr);
+          const li = document.createElement("li");
+          li.textContent = `${data.description}: ${data.amount.toFixed(2)} Dhs on ${data.date.toDate().toLocaleDateString()}`;
+          list.appendChild(li);
         });
-
-        document.getElementById("balance").textContent = balance.toFixed(2);
+        document.getElementById("childBalance").textContent = balance.toFixed(2);
       });
     }
 
-    // Show parent view and subscribe to live updates
-    function showParentView() {
-      document.getElementById("loginSection").style.display = "none";
-      document.getElementById("parentSection").style.display = "block";
-      subscribeToAllExpenses();
-    }
+    document.getElementById("parentAddExpenseBtn").addEventListener("click", async () => {
+      const name = document.getElementById("parentChildSelect").value;
+      const desc = document.getElementById("parentDesc").value.trim();
+      const amount = parseFloat(document.getElementById("parentAmount").value);
+      if (desc && !isNaN(amount)) {
+        try {
+          await addDoc(collection(db, "expenses"), {
+            child: name,
+            description: desc,
+            amount: amount,
+            date: Timestamp.now()
+          });
+          document.getElementById("parentDesc").value = "";
+          document.getElementById("parentAmount").value = "";
+        } catch (e) {
+          alert("Error adding transaction: " + e.message);
+        }
+      } else {
+        alert("Please enter valid description and amount.");
+      }
+    });
 
-    // Subscribe to all expenses live for parent dashboard
-    function subscribeToAllExpenses() {
+    function loadAllExpensesForParent() {
       const q = query(collection(db, "expenses"));
-
-      if (unsubscribeParentExpenses) unsubscribeParentExpenses();
-
-      unsubscribeParentExpenses = onSnapshot(q, snapshot => {
+      onSnapshot(q, snapshot => {
         const balances = { Khadija: 0, Omar: 0, Emad: 0 };
         const tbody = document.getElementById("parentExpenseTableBody");
         tbody.innerHTML = "";
@@ -337,7 +288,7 @@
         snapshot.forEach(docSnap => {
           const data = docSnap.data();
           const { child, description, amount, date } = data;
-          balances[child] += amount;
+          if (balances[child] !== undefined) balances[child] += amount;
 
           const tr = document.createElement("tr");
           tr.innerHTML = `
@@ -345,41 +296,33 @@
             <td>${description}</td>
             <td>${amount.toFixed(2)}</td>
             <td>${date.toDate().toLocaleDateString()}</td>
-            <td><button data-id="${docSnap.id}" class="deleteBtn">Delete</button></td>
+            <td><button data-id="${docSnap.id}" class="deleteBtn" aria-label="Delete transaction">Delete</button></td>
           `;
           tbody.appendChild(tr);
         });
 
         const ul = document.getElementById("parentBalances");
         ul.innerHTML = "";
-        for (const [child, balance] of Object.entries(balances)) {
+        for (const [child, bal] of Object.entries(balances)) {
           const li = document.createElement("li");
-          li.textContent = `${child}: ${balance.toFixed(2)} Dhs`;
+          li.textContent = `${child}: ${bal.toFixed(2)} Dhs`;
           ul.appendChild(li);
         }
 
-        // Attach delete listeners
         document.querySelectorAll(".deleteBtn").forEach(btn => {
-          btn.addEventListener("click", async e => {
+          btn.addEventListener("click", async (e) => {
             const id = e.target.getAttribute("data-id");
             if (confirm("Delete this transaction?")) {
-              await deleteDoc(doc(db, "expenses", id));
+              try {
+                await deleteDoc(doc(db, "expenses", id));
+              } catch (error) {
+                alert("Failed to delete: " + error.message);
+              }
             }
           });
         });
       });
     }
-
-    // Sign out buttons
-    document.getElementById("signOutBtn").addEventListener("click", () => {
-      signOut(auth);
-      location.reload();
-    });
-    document.getElementById("parentSignOutBtn").addEventListener("click", () => {
-      signOut(auth);
-      location.reload();
-    });
-
   </script>
 </body>
 </html>
