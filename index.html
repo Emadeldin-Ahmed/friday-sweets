@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #fceabb, #f8b500);
       color: #4a2c2a;
       padding: 20px;
@@ -44,7 +44,7 @@
       margin: 8px 0;
       width: 100%;
       box-sizing: border-box;
-      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
     #childSection, #pinSection, #parentSection {
       display: none;
@@ -87,17 +87,6 @@
       text-align: center;
       border-bottom: 1px solid #ff6f9180;
     }
-    td button {
-      background-color: #ff4b6e;
-      padding: 6px 12px;
-      font-size: 0.9em;
-      border-radius: 15px;
-      box-shadow: none;
-      margin: 0;
-    }
-    td button:hover {
-      background-color: #ff254f;
-    }
     p, label {
       font-weight: bold;
       font-size: 1.1em;
@@ -115,9 +104,10 @@
   <h1>🍬 Friday Sweets Tracker 🍭</h1>
   <button id="googleSignIn">Sign in with Google</button>
 
-  <div id="pinSection">
+  <div id="pinSection" aria-live="polite">
     <h2>Enter 4-digit PIN</h2>
     <select id="childSelect" aria-label="Select Child Name">
+      <option value="" disabled selected>Select Child</option>
       <option value="Khadija">Khadija</option>
       <option value="Omar">Omar</option>
       <option value="Emad">Emad</option>
@@ -155,7 +145,7 @@
     <h3>All Transactions</h3>
     <table>
       <thead>
-        <tr><th>Child</th><th>Description</th><th>Amount</th><th>Date</th><th>Delete</th></tr>
+        <tr><th>Child</th><th>Description</th><th>Amount</th><th>Date</th><th>Added By</th></tr>
       </thead>
       <tbody id="parentExpenseTableBody"></tbody>
     </table>
@@ -163,7 +153,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, onSnapshot, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -186,6 +176,7 @@
     let currentUserEmail = "";
     let currentChild = "";
 
+    // Sign in
     document.getElementById("googleSignIn").addEventListener("click", async () => {
       try {
         const result = await signInWithPopup(auth, provider);
@@ -204,6 +195,7 @@
       }
     });
 
+    // Verify PIN for child login
     document.getElementById("verifyPinBtn").addEventListener("click", () => {
       const selectedChild = document.getElementById("childSelect").value;
       const enteredPin = document.getElementById("pinInput").value.trim();
@@ -218,6 +210,7 @@
       }
     });
 
+    // Child adds expense (always negative)
     document.getElementById("childAddExpenseBtn").addEventListener("click", async () => {
       const desc = document.getElementById("childDesc").value.trim();
       const amount = parseFloat(document.getElementById("childAmount").value);
@@ -226,8 +219,9 @@
           await addDoc(collection(db, "expenses"), {
             child: currentChild,
             description: desc,
-            amount: -Math.abs(amount),
-            date: Timestamp.now()
+            amount: -Math.abs(amount), // always negative for child
+            date: Timestamp.now(),
+            addedBy: "Child"
           });
           document.getElementById("childDesc").value = "";
           document.getElementById("childAmount").value = "";
@@ -239,6 +233,7 @@
       }
     });
 
+    // Load child data & transactions live
     function loadChildData() {
       const q = query(collection(db, "expenses"), where("child", "==", currentChild));
       onSnapshot(q, snapshot => {
@@ -249,13 +244,14 @@
           const data = doc.data();
           balance += data.amount;
           const li = document.createElement("li");
-          li.textContent = `${data.description}: ${data.amount.toFixed(2)} Dhs on ${data.date.toDate().toLocaleDateString()}`;
+          li.textContent = `${data.description}: ${data.amount.toFixed(2)} Dhs on ${data.date.toDate().toLocaleDateString()} (Added by: ${data.addedBy})`;
           list.appendChild(li);
         });
         document.getElementById("childBalance").textContent = balance.toFixed(2);
       });
     }
 
+    // Parent adds transaction (can be + or -)
     document.getElementById("parentAddExpenseBtn").addEventListener("click", async () => {
       const name = document.getElementById("parentChildSelect").value;
       const desc = document.getElementById("parentDesc").value.trim();
@@ -266,7 +262,8 @@
             child: name,
             description: desc,
             amount: amount,
-            date: Timestamp.now()
+            date: Timestamp.now(),
+            addedBy: "Parent"
           });
           document.getElementById("parentDesc").value = "";
           document.getElementById("parentAmount").value = "";
@@ -278,6 +275,7 @@
       }
     });
 
+    // Load all expenses for parent, live update with who added it
     function loadAllExpensesForParent() {
       const q = query(collection(db, "expenses"));
       onSnapshot(q, snapshot => {
@@ -287,7 +285,7 @@
 
         snapshot.forEach(docSnap => {
           const data = docSnap.data();
-          const { child, description, amount, date } = data;
+          const { child, description, amount, date, addedBy } = data;
           if (balances[child] !== undefined) balances[child] += amount;
 
           const tr = document.createElement("tr");
@@ -296,7 +294,7 @@
             <td>${description}</td>
             <td>${amount.toFixed(2)}</td>
             <td>${date.toDate().toLocaleDateString()}</td>
-            <td><button data-id="${docSnap.id}" class="deleteBtn" aria-label="Delete transaction">Delete</button></td>
+            <td>${addedBy}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -308,19 +306,6 @@
           li.textContent = `${child}: ${bal.toFixed(2)} Dhs`;
           ul.appendChild(li);
         }
-
-        document.querySelectorAll(".deleteBtn").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
-            const id = e.target.getAttribute("data-id");
-            if (confirm("Delete this transaction?")) {
-              try {
-                await deleteDoc(doc(db, "expenses", id));
-              } catch (error) {
-                alert("Failed to delete: " + error.message);
-              }
-            }
-          });
-        });
       });
     }
   </script>
