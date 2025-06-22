@@ -1,479 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>🍭 Friday Sweets Tracker</title>
-
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #f5a623, #f76b1c);
-    color: #222;
-    padding: 30px 20px;
-    max-width: 720px;
-    margin: 0 auto;
-  }
-
-  h1 {
-    text-align: center;
-    color: #fff;
-    text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
-    margin-bottom: 30px;
-  }
-
-  button {
-    background-color: #fff;
-    border: none;
-    padding: 14px 28px;
-    font-weight: 600;
-    border-radius: 40px;
-    cursor: pointer;
-    font-size: 1.1em;
-    box-shadow: 0 6px 15px rgba(255,255,255,0.7);
-    transition: all 0.3s ease;
-    color: #f76b1c;
-    margin-top: 15px;
-  }
-  button:hover {
-    background-color: #f76b1c;
-    color: #fff;
-    box-shadow: 0 8px 25px rgba(255,255,255,0.9);
-  }
-
-  select, input[type="password"], input[type="number"], input[type="text"] {
-    padding: 14px 18px;
-    border-radius: 30px;
-    border: none;
-    font-size: 1em;
-    width: 100%;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
-    margin: 12px 0 24px;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-  }
-  select:focus, input:focus {
-    outline: none;
-    box-shadow: inset 0 0 15px #fff8dc;
-  }
-
-  .card {
-    background-color: rgba(255,255,255,0.9);
-    border-radius: 20px;
-    padding: 35px 40px;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.1);
-    margin-top: 30px;
-  }
-
-  #childBalance {
-    font-size: 3em;
-    font-weight: 700;
-    color: #f76b1c;
-    text-align: center;
-    margin-bottom: 15px;
-    letter-spacing: 0.06em;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.12);
-  }
-
-  ul, table {
-    width: 100%;
-    margin-top: 25px;
-    border-radius: 16px;
-    background: white;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-  }
-
-  ul {
-    list-style: none;
-    max-height: 250px;
-    overflow-y: auto;
-    padding-left: 20px;
-  }
-  ul li {
-    border-bottom: 1px solid #eee;
-    padding: 12px 8px;
-    font-weight: 500;
-    font-size: 1em;
-    color: #333;
-  }
-
-  table {
-    border-collapse: separate;
-    border-spacing: 0 12px;
-    font-size: 0.95em;
-  }
-  thead tr {
-    background: #f76b1c;
-    color: white;
-    font-weight: 700;
-    border-radius: 12px 12px 0 0;
-  }
-  thead th {
-    padding: 16px 15px;
-    text-align: left;
-  }
-  tbody {
-    display: block;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-  tbody tr {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-    background: #fff;
-    margin-bottom: 10px;
-    border-radius: 12px;
-    transition: background 0.3s ease;
-  }
-  tbody tr:hover {
-    background: #ffe5d0;
-  }
-  tbody td {
-    padding: 14px 15px;
-    vertical-align: middle;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  td.amount-positive {
-    color: #27ae60;
-    font-weight: 700;
-  }
-  td.amount-negative {
-    color: #c0392b;
-    font-weight: 700;
-  }
-
-  .logout-btn {
-    background-color: #c0392b !important;
-    margin-top: 40px;
-    box-shadow: 0 5px 15px rgba(192,57,43,0.6);
-    width: 100%;
-  }
-  .logout-btn:hover {
-    background-color: #e74c3c !important;
-  }
-
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Friday Sweets</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      color: #333;
+    }
+    h1 { color: #4a90e2; }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      margin: 6px;
+      padding: 10px;
+      font-size: 1em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 0.95em;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ccc;
+    }
+    th {
+      background-color: #e0e0e0;
+    }
+    .logout {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+    }
+  </style>
 </head>
 <body>
+  <button class="logout" onclick="logout()">Logout</button>
+  <div class="container">
+    <h1>🍬 Friday Sweets Tracker</h1>
+    <div id="loginSection">
+      <button onclick="loginWithGoogle()">Sign In with Google</button>
+    </div>
+    <div id="mainApp" style="display:none;">
+      <p>Signed in as <strong id="userEmail"></strong></p>
+      <h2>Your Balance: <span id="balance">0</span> Dhs</h2>
+      <div id="childControls" style="display:none;">
+        <input type="text" id="descInput" placeholder="What did you buy?">
+        <input type="number" id="amountInput" placeholder="Amount (Dhs)">
+        <button onclick="addExpense()">Add Expense</button>
+      </div>
+      <div id="parentControls" style="display:none;">
+        <select id="selectChild">
+          <option value="Khadija">Khadija</option>
+          <option value="Omar">Omar</option>
+          <option value="Emad">Emad</option>
+        </select><br>
+        <input type="number" id="parentAmount" placeholder="Amount">
+        <input type="text" id="parentDesc" placeholder="Reason">
+        <button onclick="addTransactionToChild(true)">Add Money</button>
+        <button onclick="addTransactionToChild(false)">Take Away</button>
+      </div>
+      <h3>🧾 Transactions</h3>
+      <table>
+        <thead>
+          <tr><th>Child</th><th>Description</th><th>Amount</th><th>By</th><th>Date</th></tr>
+        </thead>
+        <tbody id="txnTable"></tbody>
+      </table>
+    </div>
+  </div>
 
-<h1>🍭 Friday Sweets Tracker 🍭</h1>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-<button id="googleSignInBtn">Sign in with Google</button>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbpN6PKSiyD5nNcZNNRgshTTwUTs4A0po",
+      authDomain: "friday-sweets.firebaseapp.com",
+      projectId: "friday-sweets",
+      storageBucket: "friday-sweets.appspot.com",
+      messagingSenderId: "772417277599",
+      appId: "1:772417277599:web:f69df19ae71030af515caa"
+    };
 
-<div id="pinSection" class="card" style="display:none;">
-  <h2>Child Login</h2>
-  <select id="childSelect" aria-label="Select child name">
-    <option value="" disabled selected>Select child</option>
-    <option value="Khadija">Khadija</option>
-    <option value="Omar">Omar</option>
-    <option value="Emad">Emad</option>
-  </select>
-  <input id="pinInput" type="password" maxlength="4" placeholder="Enter 4-digit PIN" aria-label="Child PIN" />
-  <button id="verifyPinBtn">Verify PIN</button>
-</div>
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-<div id="childSection" class="card" style="display:none;">
-  <h2>Welcome, <span id="childNameDisplay"></span>!</h2>
-  <p>Your Balance</p>
-  <div id="childBalance">0.00</div>
+    const parents = ["prof.ahmedemad@gmail.com", "anotherparent@email.com"];
+    let currentUser = null;
 
-  <input id="childDesc" type="text" placeholder="What did you buy?" aria-label="Expense description" />
-  <input id="childAmount" type="number" min="0.01" step="0.01" placeholder="Amount spent (Dhs)" aria-label="Amount spent" />
-  <button id="childAddExpenseBtn">Add Expense</button>
-
-  <h3>Your Transactions</h3>
-  <ul id="childTransactions" aria-live="polite"></ul>
-
-  <button id="childLogoutBtn" class="logout-btn">Log Out</button>
-</div>
-
-<div id="parentSection" class="card" style="display:none;">
-  <h2>Parent Dashboard</h2>
-
-  <p>Balances:</p>
-  <ul id="parentBalances"></ul>
-
-  <h3>Add Transaction for Child</h3>
-  <select id="parentChildSelect" aria-label="Select child for transaction">
-    <option value="Khadija">Khadija</option>
-    <option value="Omar">Omar</option>
-    <option value="Emad">Emad</option>
-  </select>
-
-  <input id="parentDesc" type="text" placeholder="Transaction description" aria-label="Transaction description" />
-  <input id="parentAmount" type="number" step="0.01" placeholder="Amount (+ to add, - to subtract)" aria-label="Transaction amount" />
-  <button id="parentAddExpenseBtn">Add Transaction</button>
-
-  <h3>All Transactions</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Child</th>
-        <th>Description</th>
-        <th>Amount (Dhs)</th>
-        <th>Date</th>
-        <th>Added By</th>
-      </tr>
-    </thead>
-    <tbody id="parentExpenseTableBody"></tbody>
-  </table>
-
-  <button id="parentLogoutBtn" class="logout-btn">Log Out</button>
-</div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getFirestore,
-    collection,
-    addDoc,
-    query,
-    where,
-    onSnapshot,
-    Timestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import {
-    getAuth,
-    signInWithPopup,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    signOut
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAbpN6PKSiyD5nNcZNNRgshTTwUTs4A0po",
-    authDomain: "friday-sweets.firebaseapp.com",
-    projectId: "friday-sweets",
-    storageBucket: "friday-sweets.appspot.com",
-    messagingSenderId: "772417277599",
-    appId: "1:772417277599:web:f69df19ae71030af515caa"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
-
-  const pins = { Khadija: "1111", Omar: "2222", Emad: "3333" };
-  const parents = ["prof.ahmedemad@gmail.com"];
-
-  // Elements
-  const googleSignInBtn = document.getElementById("googleSignInBtn");
-  const pinSection = document.getElementById("pinSection");
-  const childSection = document.getElementById("childSection");
-  const parentSection = document.getElementById("parentSection");
-
-  const childSelect = document.getElementById("childSelect");
-  const pinInput = document.getElementById("pinInput");
-  const verifyPinBtn = document.getElementById("verifyPinBtn");
-  const childNameDisplay = document.getElementById("childNameDisplay");
-  const childBalance = document.getElementById("childBalance");
-  const childDesc = document.getElementById("childDesc");
-  const childAmount = document.getElementById("childAmount");
-  const childAddExpenseBtn = document.getElementById("childAddExpenseBtn");
-  const childTransactions = document.getElementById("childTransactions");
-  const childLogoutBtn = document.getElementById("childLogoutBtn");
-
-  const parentBalances = document.getElementById("parentBalances");
-  const parentChildSelect = document.getElementById("parentChildSelect");
-  const parentDesc = document.getElementById("parentDesc");
-  const parentAmount = document.getElementById("parentAmount");
-  const parentAddExpenseBtn = document.getElementById("parentAddExpenseBtn");
-  const parentExpenseTableBody = document.getElementById("parentExpenseTableBody");
-  const parentLogoutBtn = document.getElementById("parentLogoutBtn");
-
-  let currentUserEmail = "";
-  let currentChild = "";
-  let unsubscribeChild = null;
-  let unsubscribeParent = null;
-
-  function show(el) { el.style.display = "block"; }
-  function hide(el) { el.style.display = "none"; }
-  function clearInputs(...inputs) { inputs.forEach(i => i.value = ""); }
-
-  // Google Sign-in
-  googleSignInBtn.addEventListener("click", async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      currentUserEmail = result.user.email.toLowerCase();
-      handleLogin();
-    } catch (e) {
-      alert("Google sign-in error: " + e.message);
+    function loginWithGoogle() {
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider).catch(console.error);
     }
-  });
 
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      currentUserEmail = user.email.toLowerCase();
-      handleLogin();
-    } else {
-      resetToLogin();
+    function logout() {
+      signOut(auth);
     }
-  });
 
-  function handleLogin() {
-    hide(googleSignInBtn);
-    if (parents.includes(currentUserEmail)) {
-      show(parentSection);
-      hide(pinSection);
-      hide(childSection);
-      subscribeParent();
-    } else {
-      show(pinSection);
-      hide(childSection);
-      hide(parentSection);
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        currentUser = user;
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+        document.getElementById("userEmail").textContent = user.email;
+        const isParent = parents.includes(user.email);
+        document.getElementById("parentControls").style.display = isParent ? "block" : "none";
+        document.getElementById("childControls").style.display = isParent ? "none" : "block";
+        loadTransactions();
+      } else {
+        currentUser = null;
+        document.getElementById("mainApp").style.display = "none";
+        document.getElementById("loginSection").style.display = "block";
+      }
+    });
+
+    function loadTransactions() {
+      const txnRef = collection(db, "transactions");
+      const q = query(txnRef, orderBy("date", "desc"));
+      onSnapshot(q, snapshot => {
+        let balance = 0;
+        let html = "";
+        snapshot.forEach(doc => {
+          const tx = doc.data();
+          const amt = Number(tx.amount);
+          if (currentUser && (parents.includes(currentUser.email) || tx.child === getChildName(currentUser.email))) {
+            balance += amt;
+            html += `
+              <tr>
+                <td>${tx.child}</td>
+                <td>${tx.description}</td>
+                <td>${amt.toFixed(2)}</td>
+                <td>${tx.addedBy || "Unknown"}</td>
+                <td>${tx.date?.toDate ? tx.date.toDate().toLocaleDateString() : "Unknown"}</td>
+              </tr>`;
+          }
+        });
+        document.getElementById("balance").textContent = balance.toFixed(2);
+        document.getElementById("txnTable").innerHTML = html;
+      });
     }
-  }
 
-  function resetToLogin() {
-    hide(childSection);
-    hide(parentSection);
-    hide(pinSection);
-    show(googleSignInBtn);
-    currentChild = "";
-    if (unsubscribeChild) unsubscribeChild();
-    if (unsubscribeParent) unsubscribeParent();
-  }
-
-  verifyPinBtn.addEventListener("click", () => {
-    const selected = childSelect.value;
-    const pin = pinInput.value.trim();
-    if (!selected) return alert("Please select a child.");
-    if (pins[selected] === pin) {
-      currentChild = selected;
-      showChildDashboard();
-    } else {
-      alert("Incorrect PIN.");
+    function getChildName(email) {
+      if (email.includes("khadija")) return "Khadija";
+      if (email.includes("omar")) return "Omar";
+      return "Emad";
     }
-  });
 
-  function showChildDashboard() {
-    hide(pinSection);
-    show(childSection);
-    childNameDisplay.textContent = currentChild;
-    subscribeChild();
-  }
-
-  childLogoutBtn.addEventListener("click", async () => {
-    await signOut(auth);
-    resetToLogin();
-  });
-
-  parentLogoutBtn.addEventListener("click", async () => {
-    await signOut(auth);
-    resetToLogin();
-  });
-
-  // Child adds expense (always subtract)
-  childAddExpenseBtn.addEventListener("click", async () => {
-    const desc = childDesc.value.trim();
-    const amt = parseFloat(childAmount.value);
-    if (!desc) return alert("Enter description.");
-    if (isNaN(amt) || amt <= 0) return alert("Enter positive amount.");
-
-    try {
-      await addDoc(collection(db, "expenses"), {
-        child: currentChild,
+    async function addExpense() {
+      const desc = document.getElementById("descInput").value.trim();
+      const amt = parseFloat(document.getElementById("amountInput").value);
+      if (!desc || isNaN(amt)) return alert("Enter valid details");
+      await addDoc(collection(db, "transactions"), {
+        child: getChildName(currentUser.email),
         description: desc,
         amount: -Math.abs(amt),
-        date: Timestamp.now(),
-        addedBy: "Child"
+        date: serverTimestamp(),
+        addedBy: currentUser.email
       });
-      clearInputs(childDesc, childAmount);
-    } catch (e) {
-      alert("Failed to add expense: " + e.message);
+      document.getElementById("descInput").value = "";
+      document.getElementById("amountInput").value = "";
     }
-  });
 
-  // Parent adds transaction (+ or -)
-  parentAddExpenseBtn.addEventListener("click", async () => {
-    const name = parentChildSelect.value;
-    const desc = parentDesc.value.trim();
-    const amt = parseFloat(parentAmount.value);
-    if (!desc) return alert("Enter description.");
-    if (isNaN(amt) || amt === 0) return alert("Enter non-zero amount.");
-
-    try {
-      await addDoc(collection(db, "expenses"), {
-        child: name,
+    async function addTransactionToChild(isAdding) {
+      const child = document.getElementById("selectChild").value;
+      const amt = parseFloat(document.getElementById("parentAmount").value);
+      const desc = document.getElementById("parentDesc").value.trim();
+      if (!child || isNaN(amt) || !desc) return alert("Fill in all fields.");
+      const amount = isAdding ? Math.abs(amt) : -Math.abs(amt);
+      await addDoc(collection(db, "transactions"), {
+        child,
         description: desc,
-        amount: amt,
-        date: Timestamp.now(),
-        addedBy: "Parent"
+        amount,
+        date: serverTimestamp(),
+        addedBy: currentUser.email
       });
-      clearInputs(parentDesc, parentAmount);
-    } catch (e) {
-      alert("Failed to add transaction: " + e.message);
+      document.getElementById("parentAmount").value = "";
+      document.getElementById("parentDesc").value = "";
     }
-  });
-
-  // Subscribe to child data live
-  function subscribeChild() {
-    if (unsubscribeChild) unsubscribeChild();
-
-    const q = query(collection(db, "expenses"), where("child", "==", currentChild));
-    unsubscribeChild = onSnapshot(q, snapshot => {
-      let balance = 0;
-      childTransactions.innerHTML = "";
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const amt = Number(data.amount);
-        if (!isNaN(amt)) balance += amt;
-
-        const li = document.createElement("li");
-        li.textContent = `${data.description}: ${amt.toFixed(2)} Dhs on ${data.date.toDate().toLocaleDateString()} (Added by: ${data.addedBy})`;
-        childTransactions.appendChild(li);
-      });
-
-      childBalance.textContent = balance.toFixed(2);
-    });
-  }
-
-  // Subscribe to parent data live
-  function subscribeParent() {
-    if (unsubscribeParent) unsubscribeParent();
-
-    const q = query(collection(db, "expenses"));
-    unsubscribeParent = onSnapshot(q, snapshot => {
-      const balances = { Khadija: 0, Omar: 0, Emad: 0 };
-      parentExpenseTableBody.innerHTML = "";
-
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const { child, description, amount, date, addedBy } = data;
-        const amt = Number(amount);
-        if (!isNaN(amt) && balances.hasOwnProperty(child)) {
-          balances[child] += amt;
-        }
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${child}</td>
-          <td>${description}</td>
-          <td class="${amt < 0 ? 'amount-negative' : 'amount-positive'}">${amt.toFixed(2)}</td>
-          <td>${date.toDate().toLocaleDateString()}</td>
-          <td>${addedBy}</td>
-        `;
-        parentExpenseTableBody.appendChild(tr);
-      });
-
-      parentBalances.innerHTML = "";
-      Object.entries(balances).forEach(([child, bal]) => {
-        const li = document.createElement("li");
-        li.textContent = `${child}: ${bal.toFixed(2)} Dhs`;
-        parentBalances.appendChild(li);
-      });
-    });
-  }
-
-</script>
-
+  </script>
 </body>
 </html>
