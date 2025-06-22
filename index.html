@@ -39,6 +39,21 @@
   <div id="trackerSection">
     <h2>Welcome, <span id="currentChildName"></span>!</h2>
     <p>💰 Your balance: <strong><span id="balance">0</span> Dhs</strong></p>
+
+    <h3>Your Transactions</h3>
+    <table>
+      <thead>
+        <tr><th>Description</th><th>Amount</th><th>Date</th></tr>
+      </thead>
+      <tbody id="childExpenseTableBody"></tbody>
+    </table>
+
+    <h3>Add Expense</h3>
+    <input id="childDesc" placeholder="Description" />
+    <input id="childAmount" type="number" placeholder="Amount" />
+    <button id="childAddExpenseBtn">Add</button>
+
+    <br><br>
     <button id="signOutBtn">Sign out</button>
   </div>
 
@@ -114,6 +129,7 @@
     let currentChild = null;
     let userEmail = null;
 
+    // Sign in with Google
     document.getElementById("googleSignInBtn").addEventListener("click", () => {
       signInWithPopup(auth, provider);
     });
@@ -130,6 +146,7 @@
       }
     });
 
+    // Child selects name
     document.getElementById("childSelect").addEventListener("change", () => {
       const name = document.getElementById("childSelect").value;
       currentChild = name;
@@ -137,58 +154,101 @@
       document.getElementById("pinSection").style.display = "block";
     });
 
+    // Child enters PIN
     document.getElementById("pinSubmitBtn").addEventListener("click", async () => {
       const pin = document.getElementById("pinInput").value;
       if (children[currentChild] === pin) {
         document.getElementById("childSection").style.display = "none";
         document.getElementById("trackerSection").style.display = "block";
         document.getElementById("currentChildName").textContent = currentChild;
-        loadChildData(currentChild);
+        await loadChildData(currentChild);
       } else {
         document.getElementById("pinError").textContent = "Wrong PIN!";
       }
     });
 
+    // Child adds an expense
+    document.getElementById("childAddExpenseBtn").addEventListener("click", async () => {
+      const desc = document.getElementById("childDesc").value.trim();
+      const amount = parseFloat(document.getElementById("childAmount").value);
+      if (desc && !isNaN(amount) && amount > 0) {
+        await addDoc(collection(db, "expenses"), {
+          child: currentChild,
+          description: desc,
+          amount: -amount, // negative amount because child spends money
+          date: Timestamp.now()
+        });
+        document.getElementById("childDesc").value = "";
+        document.getElementById("childAmount").value = "";
+        await loadChildData(currentChild);
+      } else {
+        alert("Please enter a valid description and positive amount.");
+      }
+    });
+
+    // Sign out buttons
     document.getElementById("signOutBtn").addEventListener("click", () => {
       signOut(auth);
       location.reload();
     });
-
     document.getElementById("parentSignOutBtn").addEventListener("click", () => {
       signOut(auth);
       location.reload();
     });
 
+    // Parent adds any transaction (expense or money added)
     document.getElementById("parentAddExpenseBtn").addEventListener("click", async () => {
       const name = document.getElementById("parentChildSelect").value;
-      const desc = document.getElementById("parentDesc").value;
+      const desc = document.getElementById("parentDesc").value.trim();
       const amount = parseFloat(document.getElementById("parentAmount").value);
       if (desc && !isNaN(amount)) {
         await addDoc(collection(db, "expenses"), {
           child: name,
           description: desc,
-          amount: amount,
+          amount: amount, // can be positive or negative
           date: Timestamp.now()
         });
         document.getElementById("parentDesc").value = "";
         document.getElementById("parentAmount").value = "";
-        loadAllExpensesForParent();
+        await loadAllExpensesForParent();
+      } else {
+        alert("Please enter valid description and amount.");
       }
     });
 
+    // Load child data: balance + transactions
     async function loadChildData(name) {
       const q = query(collection(db, "expenses"), where("child", "==", name));
       const querySnapshot = await getDocs(q);
-      const balance = querySnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
+
+      let balance = 0;
+      const tbody = document.getElementById("childExpenseTableBody");
+      tbody.innerHTML = "";
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        balance += data.amount;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.description}</td>
+          <td>${data.amount.toFixed(2)}</td>
+          <td>${data.date.toDate().toLocaleDateString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
       document.getElementById("balance").textContent = balance.toFixed(2);
     }
 
+    // Show parent view and load all data
     async function showParentView() {
       document.getElementById("loginSection").style.display = "none";
       document.getElementById("parentSection").style.display = "block";
       await loadAllExpensesForParent();
     }
 
+    // Load all expenses for parent dashboard
     async function loadAllExpensesForParent() {
       const q = query(collection(db, "expenses"));
       const snapshot = await getDocs(q);
@@ -221,12 +281,13 @@
         ul.appendChild(li);
       }
 
+      // Delete transaction buttons
       document.querySelectorAll(".deleteBtn").forEach(btn => {
         btn.addEventListener("click", async e => {
           const id = e.target.getAttribute("data-id");
           if (confirm("Delete this transaction?")) {
             await deleteDoc(doc(db, "expenses", id));
-            loadAllExpensesForParent();
+            await loadAllExpensesForParent();
           }
         });
       });
