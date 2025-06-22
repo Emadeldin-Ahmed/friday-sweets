@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Friday Sweets Tracker with Weekly Top-up & Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+    label, select, input, button {
+      display: block;
+      margin-top: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    .expense-item {
+      margin-bottom: 5px;
+    }
+    #loginSection, #childSection, #pinSection, #trackerSection, #parentSection {
+      margin-bottom: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: left;
+    }
+    .delete-btn {
+      color: red;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Friday Sweets Tracker</h1>
+
+  <!-- Login -->
+  <div id="loginSection">
+    <button id="googleSignInBtn">Sign In with Google</button>
+  </div>
+
+  <!-- After login: Choose child -->
+  <div id="childSection" style="display:none;">
+    <label for="childSelect">Select Child:</label>
+    <select id="childSelect">
+      <option value="" disabled selected>--Select a child--</option>
+      <option value="Khadija">Khadija</option>
+      <option value="Omar">Omar</option>
+      <option value="Emad">Emad</option>
+    </select>
+  </div>
+
+  <!-- Enter PIN -->
+  <div id="pinSection" style="display:none;">
+    <label for="pinInput">Enter 4-digit PIN for <span id="pinChildName"></span>:</label>
+    <input type="password" id="pinInput" maxlength="4" placeholder="1234" />
+    <button id="pinSubmitBtn">Submit PIN</button>
+    <p id="pinError" style="color:red;"></p>
+  </div>
+
+  <!-- Tracker (Child view) -->
+  <div id="trackerSection" style="display:none;">
+    <h3>Child: <span id="currentChildName"></span></h3>
+    <h3>Current Balance: <span id="balance">Loading...</span> Dhs</h3>
+
+    <h3>Add Expense</h3>
+    <label for="desc">Description:</label>
+    <input type="text" id="desc" placeholder="What did you spend on?" />
+    <label for="amount">Amount (Dhs):</label>
+    <input type="number" id="amount" min="0" step="0.1" placeholder="Amount spent" />
+    <button id="addExpenseBtn">Add Expense</button>
+
+    <h3>Transactions</h3>
+    <ul id="expenseList"></ul>
+
+    <button id="signOutBtn" style="margin-top:20px;">Sign Out</button>
+  </div>
+
+  <!-- Parental Center -->
+  <div id="parentSection" style="display:none;">
+    <h2>Parental Center: All Children Expenses</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Child</th>
+          <th>Description</th>
+          <th>Amount (Dhs)</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="parentExpenseTableBody"></tbody>
+    </table>
+
+    <h3>Balances</h3>
+    <ul id="parentBalances"></ul>
+
+    <h3>Add Expense for Any Child</h3>
+    <label for="parentChildSelect">Child:</label>
+    <select id="parentChildSelect">
+      <option value="Khadija">Khadija</option>
+      <option value="Omar">Omar</option>
+      <option value="Emad">Emad</option>
+    </select>
+    <label for="parentDesc">Description:</label>
+    <input type="text" id="parentDesc" placeholder="Description" />
+    <label for="parentAmount">Amount (Dhs):</label>
+    <input type="number" id="parentAmount" min="0" step="0.1" placeholder="Amount" />
+    <button id="parentAddExpenseBtn">Add Expense</button>
+
+    <button id="parentSignOutBtn" style="margin-top:20px;">Sign Out</button>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import {
+      getFirestore, collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, deleteDoc, doc
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbpN6PKSiyD5nNcZNNRgshTTwUTs4A0po",
+      authDomain: "friday-sweets.firebaseapp.com",
+      projectId: "friday-sweets",
+      storageBucket: "friday-sweets.firebasestorage.app",
+      messagingSenderId: "772417277599",
+      appId: "1:772417277599:web:f69df19ae71030af515caa"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const startingBalance = 10;
+
+    // Child passwords (only for demo, not secure)
+    const childPasswords = {
+      'Khadija': '1234',
+      'Omar': '5678',
+      'Emad': '4321'
+    };
+
+    // Parental emails who get full access
+    const parentalEmails = [
+      "prof.ahmedemad@gmail.com",
+      "parent2@example.com"
+    ];
+
+    // Elements
+    const loginSection = document.getElementById('loginSection');
+    const googleSignInBtn = document.getElementById('googleSignInBtn');
+    const childSection = document.getElementById('childSection');
+    const childSelect = document.getElementById('childSelect');
+    const pinSection = document.getElementById('pinSection');
+    const pinInput = document.getElementById('pinInput');
+    const pinSubmitBtn = document.getElementById('pinSubmitBtn');
+    const pinChildNameSpan = document.getElementById('pinChildName');
+    const pinError = document.getElementById('pinError');
+    const trackerSection = document.getElementById('trackerSection');
+    const currentChildNameSpan = document.getElementById('currentChildName');
+    const balanceEl = document.getElementById('balance');
+    const descInput = document.getElementById('desc');
+    const amountInput = document.getElementById('amount');
+    const addExpenseBtn = document.getElementById('addExpenseBtn');
+    const expenseList = document.getElementById('expenseList');
+    const signOutBtn = document.getElementById('signOutBtn');
+
+    const parentSection = document.getElementById('parentSection');
+    const parentExpenseTableBody = document.getElementById('parentExpenseTableBody');
+    const parentBalances = document.getElementById('parentBalances');
+    const parentChildSelect = document.getElementById('parentChildSelect');
+    const parentDesc = document.getElementById('parentDesc');
+    const parentAmount = document.getElementById('parentAmount');
+    const parentAddExpenseBtn = document.getElementById('parentAddExpenseBtn');
+    const parentSignOutBtn = document.getElementById('parentSignOutBtn');
+
+    let unlockedChild = null; // child currently unlocked
+    let currentUserEmail = null;
+    let isParent = false;
+
+    // Google Sign-in
+    googleSignInBtn.onclick = async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (e) {
+        alert('Failed to sign in: ' + e.message);
+      }
+    };
+
+    // Sign out regular user
+    signOutBtn.onclick = async () => {
+      await signOut(auth);
+    };
+
+    // Sign out parental user
+    parentSignOutBtn.onclick = async () => {
+      await signOut(auth);
+    };
+
+    // Helper: get week start date string (e.g. "2025-06-20") for Fridays
+    function getFridayWeekString(date = new Date()) {
+      // Find previous Friday or today if Friday
+      const day = date.getDay(); // 0 Sun .. 5 Fri .. 6 Sat
+      const diff = (day >= 5) ? day - 5 : 7 - (5 - day);
+      const friday = new Date(date);
+      friday.setDate(date.getDate() - diff);
+      return friday.toISOString().slice(0, 10);
+    }
+
+    // Add weekly top-up 10 Dhs if missing for this week for a child
+    async function addWeeklyTopUpIfMissing(child) {
+      const fridayStr = getFridayWeekString();
+      const expensesRef = collection(db, 'expenses');
+      const q = query(expensesRef,
+        where('child', '==', child),
+        where('description', '==', 'Friday top-up'),
+        orderBy('timestamp', 'desc')
+      );
+
+      try {
+        const snapshot = await getDocs(q);
+        // Check if any Friday top-up exists for this Friday week
+        let hasThisWeekTopUp = false;
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (!data.timestamp) return;
+          const tsDate = data.timestamp.toDate();
+          const tsFridayStr = tsDate.toISOString().slice(0,10);
+          if(tsFridayStr === fridayStr) {
+            hasThisWeekTopUp = true;
+          }
+        });
+
+        if (!hasThisWeekTopUp) {
+          // Add Friday top-up +10
+          await addDoc(expensesRef, {
+            child: child,
+            description: 'Friday top-up',
+            amount: 10,
+            timestamp: serverTimestamp()
+          });
+          console.log(`Added Friday top-up for ${child} for week starting ${fridayStr}`);
+        }
+      } catch(e) {
+        console.error('Error adding weekly top-up:', e);
+      }
+    }
+
+    // On auth state change
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        currentUserEmail = user.email;
+        isParent = parentalEmails.includes(currentUserEmail);
+
+        loginSection.style.display = 'none';
+
+        if (isParent) {
+          // Show parental center
+          parentSection.style.display = 'block';
+          childSection.style.display = 'none';
+          pinSection.style.display = 'none';
+          trackerSection.style.display = 'none';
+          await loadAllExpensesForParent();
+        } else {
+          // Normal user flow
+          parentSection.style.display = 'none';
+          childSection.style.display = 'block';
+          pinSection.style.display = 'none';
+          trackerSection.style.display = 'none';
+          unlockedChild = null;
+          pinInput.value = '';
+          pinError.textContent = '';
+          childSelect.value = '';
+        }
+      } else {
+        // Logged out
+        loginSection.style.display = 'block';
+        childSection.style.display = 'none';
+        pinSection.style.display = 'none';
+        trackerSection.style.display = 'none';
+        parentSection.style.display = 'none';
+        unlockedChild = null;
+        currentUserEmail = null;
+        isParent = false;
+      }
+    });
+
+    // When a child is selected, prompt for PIN
+    childSelect.onchange = () => {
+      const child = childSelect.value;
+      pinChildNameSpan.textContent = child;
+      pinInput.value = '';
+      pinError.textContent = '';
+      pinSection.style.display = 'block';
+      trackerSection.style.display = 'none';
+      unlockedChild = null;
+    };
+
+    // PIN submit button click
+    pinSubmitBtn.onclick = async () => {
+      const child = childSelect.value;
+      const enteredPin = pinInput.value.trim();
+      if (enteredPin === childPasswords[child]) {
+        // Correct PIN
+        unlockedChild = child;
+        pinSection.style.display = 'none';
+        currentChildNameSpan.textContent = child;
+        trackerSection.style.display = 'block';
+        await addWeeklyTopUpIfMissing(child);
+        await loadExpenses(child);
+      } else {
+        pinError.textContent = 'Incorrect PIN. Try again.';
+      }
+    };
+
+    // Load expenses for child (child view)
+    async function loadExpenses(child) {
+      expenseList.innerHTML = '';
+      balanceEl.textContent = 'Loading...';
+
+      const expensesRef = collection(db, 'expenses');
+      const q = query(expensesRef, where('child', '==', child), orderBy('timestamp', 'desc'));
+
+      try {
+        const querySnapshot = await getDocs(q);
+        let totalSpent = 0;
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          totalSpent += data.amount;
+
+          const li = document.createElement('li');
+          li.classList.add('expense-item');
+          const date = data.timestamp ? data.timestamp.toDate().toLocaleDateString() : '';
+          li.textContent = `${date} - ${data.description}: ${data.amount} Dhs`;
+          expenseList.appendChild(li);
+        });
+
+        const balance = totalSpent; // Because Friday top-ups add positive amounts, expenses subtract by negative amounts (see note)
+        // Actually we calculate balance as sum of all amounts starting from 0:
+        // StartingBalance no longer needed as top-ups are tracked as transactions
+        balanceEl.textContent = totalSpent.toFixed(2);
+      } catch (error) {
+        balanceEl.textContent = 'Error loading data';
+        console.error("Error loading expenses:", error);
+      }
+    }
+
+    // Add expense (child)
+    addExpenseBtn.onclick = async () => {
+      if (!unlockedChild) {
+        alert('Please select a child and enter correct PIN first.');
+        return;
+      }
+      const description = descInput.value.trim();
+      const amount = parseFloat(amountInput.value);
+
+      if (!description) {
+        alert('Please enter a description.');
+        return;
+      }
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid positive amount.');
+        return;
+      }
+
+      // Check current total spent
+      const expensesRef = collection(db, 'expenses');
+      const q = query(expensesRef, where('child', '==', unlockedChild));
+      const querySnapshot = await getDocs(q);
+
+      let totalAmount = 0;
+      querySnapshot.forEach(doc => {
+        totalAmount += doc.data().amount;
+      });
+
+      if (totalAmount - amount < 0) {
+        alert(`Not enough balance! ${unlockedChild} only has ${(totalAmount).toFixed(2)} Dhs left.`);
+        return;
+      }
+
+      try {
+        await addDoc(expensesRef, {
+          child: unlockedChild,
+          description: description,
+          amount: -amount, // Expenses stored as negative amounts
+          timestamp: serverTimestamp()
+        });
+
+        descInput.value = '';
+        amountInput.value = '';
+        loadExpenses(unlockedChild);
+      } catch (error) {
+        alert('Failed to add expense.');
+        console.error("Error adding expense:", error);
+      }
+    };
+
+    // Load all expenses for parents (parent view)
+    async function loadAllExpensesForParent() {
+      parentExpenseTableBody.innerHTML = '';
+      parentBalances.innerHTML = '';
+      const expensesRef = collection(db, 'expenses');
+      const q = query(expensesRef, orderBy('timestamp', 'desc'));
+
+      try {
+        const querySnapshot = await getDocs(q);
+
+        let totals = { 'Khadija': 0, 'Omar': 0, 'Emad': 0 };
+
+        querySnapshot.forEach(doc => {
+          const data = doc.data();
+
+          // Add row to table
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${data.child}</td>
+            <td>${data.description}</td>
+            <td>${data.amount.toFixed(2)}</td>
+            <td>${data.timestamp ? data.timestamp.toDate().toLocaleDateString() : ''}</td>
+            <td><button class="delete-btn" data-id="${doc.id}">Delete</button></td>
+          `;
+          parentExpenseTableBody.appendChild(tr);
+
+          // Sum totals
+          totals[data.child] = (totals[data.child] || 0) + data.amount;
+        });
+
+        // Show balances
+        for (const child of ['Khadija', 'Omar', 'Emad']) {
+          const bal = totals[child] || 0;
+          const li = document.createElement('li');
+          li.textContent = `${child}: ${bal.toFixed(2)} Dhs`;
+          parentBalances.appendChild(li);
+        }
+
+        // Add event listeners to delete buttons
+        document.querySelectorAll('.delete-btn').forEach(button => {
+          button.addEventListener('click', async e => {
+            const id = e.target.getAttribute('data-id');
+            if(confirm('Delete this expense?')) {
+              try {
+                await deleteDoc(doc(db, 'expenses', id));
+                await loadAllExpensesForParent();
+              } catch(err) {
+                alert('Failed to delete expense.');
+                console.error(err);
+              }
+            }
+          });
+        });
+      } catch (error) {
+        console.error("Error loading parental expenses:", error);
+        parentExpenseTableBody.innerHTML = '<tr><td colspan="5">Error loading data.</td></tr>';
+      }
+    }
+
+    // Parent adds expense
+    parentAddExpenseBtn.onclick = async () => {
+      const child = parentChildSelect.value;
+      const description = parentDesc.value.trim();
+      const amount = parseFloat(parentAmount.value);
+
+      if (!description) {
+        alert('Please enter a description.');
+        return;
+      }
+      if (isNaN(amount) || amount === 0) {
+        alert('Please enter a valid non-zero amount.');
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, 'expenses'), {
+          child: child,
+          description: description,
+          amount: amount,
+          timestamp: serverTimestamp()
+        });
+
+        parentDesc.value = '';
+        parentAmount.value = '';
+        await loadAllExpensesForParent();
+      } catch (error) {
+        alert('Failed to add expense.');
+        console.error(error);
+      }
+    };
+  </script>
+
+</body>
+</html>
