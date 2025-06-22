@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Friday Sweets</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    #childSection, #pinSection, #trackerSection, #parentSection { display: none; margin-top: 20px; }
+    button { margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>🍬 Friday Sweets Tracker</h1>
+
+  <div id="loginSection">
+    <button id="googleSignInBtn">Sign in with Google</button>
+  </div>
+
+  <!-- CHILD VIEW -->
+  <div id="childSection">
+    <h2>Who are you?</h2>
+    <select id="childSelect">
+      <option disabled selected>Pick a name</option>
+      <option>Khadija</option>
+      <option>Omar</option>
+      <option>Emad</option>
+    </select>
+    <div id="pinSection">
+      <p>Enter PIN for <strong id="pinChildName"></strong>:</p>
+      <input id="pinInput" type="password" placeholder="4-digit PIN" />
+      <button id="pinSubmitBtn">Unlock</button>
+      <div id="pinError" style="color:red;"></div>
+    </div>
+  </div>
+
+  <div id="trackerSection">
+    <h2>Welcome, <span id="currentChildName"></span>!</h2>
+    <p>💰 Your balance: <strong><span id="balance">0</span> Dhs</strong></p>
+    <button id="signOutBtn">Sign out</button>
+  </div>
+
+  <!-- PARENT VIEW -->
+  <div id="parentSection">
+    <h2>👨‍👩‍👧 Parental Dashboard</h2>
+    <ul id="parentBalances"></ul>
+
+    <h3>All Transactions</h3>
+    <table>
+      <thead>
+        <tr><th>Child</th><th>Description</th><th>Amount</th><th>Date</th><th>Action</th></tr>
+      </thead>
+      <tbody id="parentExpenseTableBody"></tbody>
+    </table>
+
+    <h3>Add Transaction for Any Child</h3>
+    <select id="parentChildSelect">
+      <option>Khadija</option>
+      <option>Omar</option>
+      <option>Emad</option>
+    </select>
+    <input id="parentDesc" placeholder="Description" />
+    <input id="parentAmount" type="number" placeholder="Amount" />
+    <button id="parentAddExpenseBtn">Add Transaction</button>
+    <br><br>
+    <button id="parentSignOutBtn">Sign out</button>
+  </div>
+
+  <!-- FIREBASE + LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      query,
+      where,
+      getDocs,
+      deleteDoc,
+      doc,
+      Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbpN6PKSiyD5nNcZNNRgshTTwUTs4A0po",
+      authDomain: "friday-sweets.firebaseapp.com",
+      projectId: "friday-sweets",
+      storageBucket: "friday-sweets.appspot.com",
+      messagingSenderId: "772417277599",
+      appId: "1:772417277599:web:f69df19ae71030af515caa"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    const children = {
+      Khadija: "1111",
+      Omar: "2222",
+      Emad: "3333"
+    };
+
+    const parentalEmails = ["prof.ahmedemad@gmail.com"];
+    let currentChild = null;
+    let userEmail = null;
+
+    document.getElementById("googleSignInBtn").addEventListener("click", () => {
+      signInWithPopup(auth, provider);
+    });
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        userEmail = user.email;
+        if (parentalEmails.includes(userEmail)) {
+          showParentView();
+        } else {
+          document.getElementById("loginSection").style.display = "none";
+          document.getElementById("childSection").style.display = "block";
+        }
+      }
+    });
+
+    document.getElementById("childSelect").addEventListener("change", () => {
+      const name = document.getElementById("childSelect").value;
+      currentChild = name;
+      document.getElementById("pinChildName").textContent = name;
+      document.getElementById("pinSection").style.display = "block";
+    });
+
+    document.getElementById("pinSubmitBtn").addEventListener("click", async () => {
+      const pin = document.getElementById("pinInput").value;
+      if (children[currentChild] === pin) {
+        document.getElementById("childSection").style.display = "none";
+        document.getElementById("trackerSection").style.display = "block";
+        document.getElementById("currentChildName").textContent = currentChild;
+        loadChildData(currentChild);
+      } else {
+        document.getElementById("pinError").textContent = "Wrong PIN!";
+      }
+    });
+
+    document.getElementById("signOutBtn").addEventListener("click", () => {
+      signOut(auth);
+      location.reload();
+    });
+
+    document.getElementById("parentSignOutBtn").addEventListener("click", () => {
+      signOut(auth);
+      location.reload();
+    });
+
+    document.getElementById("parentAddExpenseBtn").addEventListener("click", async () => {
+      const name = document.getElementById("parentChildSelect").value;
+      const desc = document.getElementById("parentDesc").value;
+      const amount = parseFloat(document.getElementById("parentAmount").value);
+      if (desc && !isNaN(amount)) {
+        await addDoc(collection(db, "expenses"), {
+          child: name,
+          description: desc,
+          amount: amount,
+          date: Timestamp.now()
+        });
+        document.getElementById("parentDesc").value = "";
+        document.getElementById("parentAmount").value = "";
+        loadAllExpensesForParent();
+      }
+    });
+
+    async function loadChildData(name) {
+      const q = query(collection(db, "expenses"), where("child", "==", name));
+      const querySnapshot = await getDocs(q);
+      const balance = querySnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
+      document.getElementById("balance").textContent = balance.toFixed(2);
+    }
+
+    async function showParentView() {
+      document.getElementById("loginSection").style.display = "none";
+      document.getElementById("parentSection").style.display = "block";
+      await loadAllExpensesForParent();
+    }
+
+    async function loadAllExpensesForParent() {
+      const q = query(collection(db, "expenses"));
+      const snapshot = await getDocs(q);
+
+      const balances = { Khadija: 0, Omar: 0, Emad: 0 };
+      const tbody = document.getElementById("parentExpenseTableBody");
+      tbody.innerHTML = "";
+
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const { child, description, amount, date } = data;
+        balances[child] += amount;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${child}</td>
+          <td>${description}</td>
+          <td>${amount.toFixed(2)}</td>
+          <td>${date.toDate().toLocaleDateString()}</td>
+          <td><button data-id="${docSnap.id}" class="deleteBtn">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const ul = document.getElementById("parentBalances");
+      ul.innerHTML = "";
+      for (const [child, balance] of Object.entries(balances)) {
+        const li = document.createElement("li");
+        li.textContent = `${child}: ${balance.toFixed(2)} Dhs`;
+        ul.appendChild(li);
+      }
+
+      document.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.addEventListener("click", async e => {
+          const id = e.target.getAttribute("data-id");
+          if (confirm("Delete this transaction?")) {
+            await deleteDoc(doc(db, "expenses", id));
+            loadAllExpensesForParent();
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>
