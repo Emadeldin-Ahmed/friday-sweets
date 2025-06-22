@@ -4,96 +4,115 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Friday Sweets</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: #f9f9f9;
+      font-family: 'Fredoka', sans-serif;
+      background: #fffced;
       margin: 0;
       padding: 0;
-      text-align: center;
       color: #333;
     }
-    h1 { color: #4a90e2; }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
+    header {
+      background: #ffb347;
       padding: 20px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .container {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    .card {
       background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     input, button {
-      margin: 6px;
       padding: 10px;
-      font-size: 1em;
+      margin: 5px 0;
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    button {
+      background: #ffb347;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
-      font-size: 0.95em;
+      margin-top: 10px;
     }
     th, td {
-      padding: 8px;
-      border: 1px solid #ccc;
+      border-bottom: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
     }
-    th {
-      background-color: #e0e0e0;
+    .balance {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
     }
-    .logout {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #ff4d4d;
-      color: white;
-      border: none;
-      border-radius: 6px;
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <button class="logout" onclick="logout()">Logout</button>
+  <header>🍬 Friday Sweets</header>
   <div class="container">
-    <h1>🍬 Friday Sweets Tracker</h1>
-    <div id="loginSection">
-      <button onclick="loginWithGoogle()">Sign In with Google</button>
+    <div id="login" class="card">
+      <h2>Sign In</h2>
+      <button onclick="signIn()">Sign in with Google</button>
     </div>
-    <div id="mainApp" style="display:none;">
-      <p>Signed in as <strong id="userEmail"></strong></p>
-      <h2>Your Balance: <span id="balance">0</span> Dhs</h2>
-      <div id="childControls" style="display:none;">
-        <input type="text" id="descInput" placeholder="What did you buy?">
-        <input type="number" id="amountInput" placeholder="Amount (Dhs)">
-        <button onclick="addExpense()">Add Expense</button>
-      </div>
-      <div id="parentControls" style="display:none;">
-        <select id="selectChild">
-          <option value="Khadija">Khadija</option>
-          <option value="Omar">Omar</option>
-          <option value="Emad">Emad</option>
-        </select><br>
-        <input type="number" id="parentAmount" placeholder="Amount">
-        <input type="text" id="parentDesc" placeholder="Reason">
-        <button onclick="addTransactionToChild(true)">Add Money</button>
-        <button onclick="addTransactionToChild(false)">Take Away</button>
-      </div>
-      <h3>🧾 Transactions</h3>
-      <table>
-        <thead>
-          <tr><th>Child</th><th>Description</th><th>Amount</th><th>By</th><th>Date</th></tr>
-        </thead>
-        <tbody id="txnTable"></tbody>
+
+    <div id="child-panel" class="card hidden">
+      <h2>Welcome, <span id="child-name"></span>!</h2>
+      <div class="balance">Balance: <span id="child-balance">--</span> Dhs</div>
+      <input type="text" id="child-desc" placeholder="What did you buy?" />
+      <input type="number" id="child-amount" placeholder="How much?" />
+      <button onclick="addTransaction()">Add Expense</button>
+      <h3>Your Transactions</h3>
+      <table id="child-transactions">
+        <tr><th>What</th><th>Amount</th><th>Date</th></tr>
       </table>
+      <button onclick="signOut()">Logout</button>
+    </div>
+
+    <div id="parent-panel" class="card hidden">
+      <h2>Parent Dashboard</h2>
+      <h3>Balances</h3>
+      <div id="parent-balances"></div>
+      <h3>Add/Take Money</h3>
+      <input type="text" id="parent-child-name" placeholder="Child's name (Emad, Khadija, Omar)" />
+      <input type="number" id="parent-amount" placeholder="Amount (+ or -)" />
+      <input type="text" id="parent-desc" placeholder="Reason" />
+      <button onclick="parentAddMoney()">Submit</button>
+      <h3>All Transactions</h3>
+      <table id="parent-transactions">
+        <tr><th>Child</th><th>What</th><th>Amount</th><th>Date</th></tr>
+      </table>
+      <button onclick="signOut()">Logout</button>
     </div>
   </div>
 
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
+      getFirestore, collection, addDoc, query, orderBy,
+      onSnapshot, serverTimestamp, doc, getDocs
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import {
-      getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
+      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     const firebaseConfig = {
@@ -108,99 +127,112 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-    const parents = ["prof.ahmedemad@gmail.com", "anotherparent@email.com"];
+    const parents = ["prof.ahmedemad@gmail.com", "parent2@example.com"];
+    const kids = ["Emad", "Omar", "Khadija"];
+
     let currentUser = null;
 
-    function loginWithGoogle() {
-      const provider = new GoogleAuthProvider();
-      signInWithPopup(auth, provider).catch(console.error);
-    }
-
-    function logout() {
-      signOut(auth);
-    }
-
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
-        document.getElementById("loginSection").style.display = "none";
-        document.getElementById("mainApp").style.display = "block";
-        document.getElementById("userEmail").textContent = user.email;
-        const isParent = parents.includes(user.email);
-        document.getElementById("parentControls").style.display = isParent ? "block" : "none";
-        document.getElementById("childControls").style.display = isParent ? "none" : "block";
-        loadTransactions();
-      } else {
-        currentUser = null;
-        document.getElementById("mainApp").style.display = "none";
-        document.getElementById("loginSection").style.display = "block";
+        initApp(user);
       }
     });
 
-    function loadTransactions() {
-      const txnRef = collection(db, "transactions");
-      const q = query(txnRef, orderBy("date", "desc"));
-      onSnapshot(q, snapshot => {
+    window.signIn = () => signInWithPopup(auth, provider).then(res => {
+      currentUser = res.user;
+      initApp(res.user);
+    });
+
+    window.signOut = () => auth.signOut().then(() => location.reload());
+
+    function initApp(user) {
+      document.getElementById("login").classList.add("hidden");
+      if (parents.includes(user.email)) {
+        document.getElementById("parent-panel").classList.remove("hidden");
+        loadParentData();
+      } else {
+        document.getElementById("child-panel").classList.remove("hidden");
+        document.getElementById("child-name").textContent = user.displayName;
+        loadChildData(user.displayName);
+      }
+    }
+
+    function loadChildData(name) {
+      const q = query(collection(db, "transactions"), orderBy("date", "desc"));
+      onSnapshot(q, (snapshot) => {
         let balance = 0;
-        let html = "";
+        let rows = "";
         snapshot.forEach(doc => {
           const tx = doc.data();
-          const amt = Number(tx.amount);
-          if (currentUser && (parents.includes(currentUser.email) || tx.child === getChildName(currentUser.email))) {
-            balance += amt;
-            html += `
-              <tr>
-                <td>${tx.child}</td>
-                <td>${tx.description}</td>
-                <td>${amt.toFixed(2)}</td>
-                <td>${tx.addedBy || "Unknown"}</td>
-                <td>${tx.date?.toDate ? tx.date.toDate().toLocaleDateString() : "Unknown"}</td>
-              </tr>`;
+          if (tx.child === name) {
+            balance += tx.amount;
+            const date = tx.date?.toDate?.().toLocaleDateString() || "Unknown";
+            rows += `<tr><td>${tx.description}</td><td>${tx.amount}</td><td>${date}</td></tr>`;
           }
         });
-        document.getElementById("balance").textContent = balance.toFixed(2);
-        document.getElementById("txnTable").innerHTML = html;
+        document.getElementById("child-balance").textContent = balance.toFixed(2);
+        document.getElementById("child-transactions").innerHTML = `
+          <tr><th>What</th><th>Amount</th><th>Date</th></tr>
+          ${rows}`;
       });
     }
 
-    function getChildName(email) {
-      if (email.includes("khadija")) return "Khadija";
-      if (email.includes("omar")) return "Omar";
-      return "Emad";
-    }
-
-    async function addExpense() {
-      const desc = document.getElementById("descInput").value.trim();
-      const amt = parseFloat(document.getElementById("amountInput").value);
-      if (!desc || isNaN(amt)) return alert("Enter valid details");
-      await addDoc(collection(db, "transactions"), {
-        child: getChildName(currentUser.email),
-        description: desc,
-        amount: -Math.abs(amt),
-        date: serverTimestamp(),
-        addedBy: currentUser.email
+    function loadParentData() {
+      const q = query(collection(db, "transactions"), orderBy("date", "desc"));
+      onSnapshot(q, (snapshot) => {
+        let balances = { Emad: 0, Omar: 0, Khadija: 0 };
+        let rows = "";
+        snapshot.forEach(doc => {
+          const tx = doc.data();
+          if (balances.hasOwnProperty(tx.child)) {
+            balances[tx.child] += tx.amount;
+            const date = tx.date?.toDate?.().toLocaleDateString() || "Unknown";
+            rows += `<tr><td>${tx.child}</td><td>${tx.description}</td><td>${tx.amount}</td><td>${date}</td></tr>`;
+          }
+        });
+        document.getElementById("parent-balances").innerHTML = `
+          Emad: ${balances.Emad.toFixed(2)} Dhs<br>
+          Omar: ${balances.Omar.toFixed(2)} Dhs<br>
+          Khadija: ${balances.Khadija.toFixed(2)} Dhs
+        `;
+        document.getElementById("parent-transactions").innerHTML = `
+          <tr><th>Child</th><th>What</th><th>Amount</th><th>Date</th></tr>
+          ${rows}`;
       });
-      document.getElementById("descInput").value = "";
-      document.getElementById("amountInput").value = "";
     }
 
-    async function addTransactionToChild(isAdding) {
-      const child = document.getElementById("selectChild").value;
-      const amt = parseFloat(document.getElementById("parentAmount").value);
-      const desc = document.getElementById("parentDesc").value.trim();
-      if (!child || isNaN(amt) || !desc) return alert("Fill in all fields.");
-      const amount = isAdding ? Math.abs(amt) : -Math.abs(amt);
+    window.addTransaction = async () => {
+      const desc = document.getElementById("child-desc").value;
+      const amount = parseFloat(document.getElementById("child-amount").value);
+      if (!desc || isNaN(amount)) return alert("Fill all fields");
       await addDoc(collection(db, "transactions"), {
-        child,
+        child: currentUser.displayName,
         description: desc,
         amount,
-        date: serverTimestamp(),
-        addedBy: currentUser.email
+        date: serverTimestamp()
       });
-      document.getElementById("parentAmount").value = "";
-      document.getElementById("parentDesc").value = "";
-    }
+      document.getElementById("child-desc").value = "";
+      document.getElementById("child-amount").value = "";
+    };
+
+    window.parentAddMoney = async () => {
+      const name = document.getElementById("parent-child-name").value;
+      const amount = parseFloat(document.getElementById("parent-amount").value);
+      const desc = document.getElementById("parent-desc").value;
+      if (!kids.includes(name) || isNaN(amount) || !desc) return alert("Invalid data");
+      await addDoc(collection(db, "transactions"), {
+        child: name,
+        description: desc,
+        amount,
+        date: serverTimestamp()
+      });
+      document.getElementById("parent-child-name").value = "";
+      document.getElementById("parent-amount").value = "";
+      document.getElementById("parent-desc").value = "";
+    };
   </script>
 </body>
 </html>
